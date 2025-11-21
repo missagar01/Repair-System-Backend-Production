@@ -1,29 +1,45 @@
-import { findUserByCredentials } from "../services/authServices.js";
+// controllers/authController.js
+import pool from "../config/db.js";
+import bcrypt from "bcrypt";
 
-export const loginUser = async (req, res) => {
+export const authenticateUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (!username)
-      return res.status(400).json({ success: false, message: "Username or ID is required" });
+    // Fetch user
+    const query = `SELECT * FROM users WHERE LOWER(user_name) = LOWER($1);`;
+    const { rows } = await pool.query(query, [username]);
 
-    const user = await findUserByCredentials(username, password);
+    if (rows.length === 0) {
+      return res.status(401).json({ success: false, message: "Invalid Username" });
+    }
 
-    if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
+    const user = rows[0];
 
-    const userData = {
-      id: user.id,
-      name: user.username,
-      role: user.role,
-      page: Array.isArray(user.page_access)
-        ? user.page_access.join(", ")
-        : user.page_access,
-    };
+    // Password check
+    const match = password === user.password;  
+    // If you use bcrypt:
+    // const match = await bcrypt.compare(password, user.password);
 
-    return res.status(200).json({ success: true, user: userData });
+    if (!match) {
+      return res.status(401).json({ success: false, message: "Invalid Password" });
+    }
+
+    // Prepare access list
+    const accessList = user.page_access || [];
+
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.user_name,
+        role: user.role,
+        access: accessList
+      }
+    });
+
   } catch (error) {
-    console.error("❌ Login error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Auth error:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };

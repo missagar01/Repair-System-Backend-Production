@@ -1,0 +1,109 @@
+import pool from "../config/db.js";
+import { insertRepairTask } from "../services/repairServices.js";
+
+export const createRepairTask = async (req, res) => {
+  try {
+    const {
+      time_stamp,
+      serial_no,
+      machine_name,
+      given_by,
+      doer_name,
+      enable_reminders,
+      require_attachment,
+      task_start_date,
+      task_ending_date,
+      problem_with_machine,
+      department,
+      location,
+      machine_part_name,
+      image_link,
+      priority,
+    } = req.body;
+
+    const result = await insertRepairTask({
+      time_stamp,
+      serial_no,
+      machine_name,
+      given_by,
+      doer_name,
+      enable_reminders,
+      require_attachment,
+      task_start_date,
+      task_ending_date,
+      problem_with_machine,
+      department,
+      location,
+      machine_part_name,
+      image_link,
+      priority,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Repair task created successfully!",
+      data: result,
+    });
+
+  } catch (err) {
+    console.error("❌ Error creating repair task:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const getAllRepairTasks = async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        id,
+        time_stamp,
+        task_no,
+        serial_no,
+        machine_name,
+        machine_part_name,
+        given_by,
+        doer_name,
+        problem_with_machine,
+        enable_reminders,
+        require_attachment,
+        task_start_date,
+        task_ending_date,
+        priority,
+        department,
+        location,
+        image_link,
+        status
+      FROM repair_system
+      ORDER BY id DESC;
+    `;
+
+    const result = await pool.query(query);
+
+    const formatted = result.rows.map((row) => ({
+      id: row.id,
+      timestamp: row.time_stamp,
+      taskNo: row.task_no,
+      serialNo: row.serial_no,
+      machineName: row.machine_name,
+      machinePartName: row.machine_part_name,
+      givenBy: row.given_by,
+      doerName: row.doer_name,
+      problem: row.problem_with_machine,
+      enableReminder: row.enable_reminders,
+      requireAttachment: row.require_attachment,
+      taskStartDate: row.task_start_date,
+      taskEndDate: row.task_ending_date,
+      priority: row.priority,
+      department: row.department,
+      location: row.location,
+      imageLink: row.image_link,
+      status: row.status || "Pending",
+    }));
+
+    res.json({ success: true, tasks: formatted });
+
+  } catch (error) {
+    console.error("❌ Error fetching repair tasks:", error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+};

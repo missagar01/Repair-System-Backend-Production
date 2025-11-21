@@ -1,23 +1,11 @@
 import express from "express";
 import {
-  getDashboardStats,
-  getMaintenanceCostByMachine,
-  getDepartmentCostBreakdown,
-  getFrequencyStats,
+  getDashboardMetrics,
 } from "../controllers/dashboardController.js";
 
 const router = express.Router();
 
-// ✅ Dashboard summary stats
-router.get("/stats", getDashboardStats);
-
-// ✅ Maintenance cost grouped by machine
-router.get("/maintenance-costs", getMaintenanceCostByMachine);
-
-// ✅ Department cost breakdown
-router.get("/department-costs", getDepartmentCostBreakdown);
-
-// ✅ Frequency stats
-router.get("/frequencies", getFrequencyStats);
+// GET dashboard summary
+router.get("/", getDashboardMetrics);
 
 export default router;
