@@ -4,6 +4,7 @@ import {
   getHistoryRepairTasks,
   updateRepairTask,
 } from "../services/sentToVendorServices.js";
+import { uploadToS3 } from "../middleware/s3Upload.js";  // ✅ ADD THIS
 
 // -------------------------------------------
 // GET ALL TASKS
@@ -50,9 +51,24 @@ export const fetchHistoryTasks = async (req, res) => {
 export const updateTaskDetails = async (req, res) => {
   try {
     const { taskNo } = req.params;
+
+    let transportingImageUrl = "";
+
+    // ⭐ If file exists → upload to S3
+    if (req.file) {
+      transportingImageUrl = await uploadToS3(req.file);
+    }
+
+    // Body fields
     const body = req.body;
 
-    const updated = await updateRepairTask(taskNo, body);
+    // ⭐ Inject S3 URL into body
+    const payload = {
+      ...body,
+      transportingImageWithMachine: transportingImageUrl || body.transportingImageWithMachine || null,
+    };
+
+    const updated = await updateRepairTask(taskNo, payload);
 
     return res.json({
       success: true,

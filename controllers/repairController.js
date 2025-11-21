@@ -1,8 +1,17 @@
 import pool from "../config/db.js";
 import { insertRepairTask } from "../services/repairServices.js";
+import { uploadToS3 } from "../middleware/s3Upload.js";   // ✅ important
 
 export const createRepairTask = async (req, res) => {
   try {
+    let imageUrl = "";
+
+    // 1️⃣ If file uploaded → upload to S3
+    if (req.file) {
+      imageUrl = await uploadToS3(req.file);
+    }
+
+    // 2️⃣ Extract remaining fields from req.body
     const {
       time_stamp,
       serial_no,
@@ -17,10 +26,10 @@ export const createRepairTask = async (req, res) => {
       department,
       location,
       machine_part_name,
-      image_link,
       priority,
     } = req.body;
 
+    // 3️⃣ Send data to insertRepairTask
     const result = await insertRepairTask({
       time_stamp,
       serial_no,
@@ -35,10 +44,11 @@ export const createRepairTask = async (req, res) => {
       department,
       location,
       machine_part_name,
-      image_link,
+      image_link: imageUrl,   // 👈 KEY: FINAL S3 URL
       priority,
     });
 
+    // 4️⃣ Response
     res.status(201).json({
       success: true,
       message: "Repair task created successfully!",
